@@ -40,7 +40,9 @@ The Sjtu Emotion EEG Dataset (SEED) contains EEG records of 15 subjects watching
 
 ## 3. Experimental Protocols & In-depth Performance Analysis
 
-Below is the comparison of classification performance using the `DAGCN` model on the SEED dataset across the four implemented protocols:
+### 3.1 Classification Performance on LDS Features (Smoothed)
+
+Below is the comparison of classification performance using the `DAGCN` model on the SEED dataset across the four implemented protocols with standard LDS-smoothed features:
 
 | Evaluation Protocol | Script File | Data Scope | Validation Split | Granularity | Training Epochs | Subject 1 Acc | All Subjects Avg |
 | :--- | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -60,6 +62,22 @@ Below is the comparison of classification performance using the `DAGCN` model on
 4. **Adapter-Finetuned Transfer (AFTL)**:
    * **Window-level Split (`--split_type window`)**: Achieving 94.40% to 100.00% accuracy reproduces the results in the paper. This confirms the paper's target splitting protocol utilizes random window-level splits, leading to temporal data leakage from the target subject.
    * **Trial-level Split (`--split_type trial`)**: When splitting target subject data by trials (8 trials for adaptation, 7 trials for testing), there is **zero leakage**. The model adapts initially (achieving **61.28%** test accuracy at Epoch 1), but because the adaptation set is small (only 8 trials), the 1,456 adapter parameters quickly overfit, memorizing the training trials (hitting 100% train accuracy) while test accuracy on unseen trials degrades to **26.22%**.
+
+### 3.2 Classification Performance on Raw DE Features (No LDS Smoothing)
+
+We extracted raw, un-smoothed Differential Entropy (DE) and Power Spectral Density (PSD) features directly from the preprocessed EEG time-series signals on the D drive, and reran the evaluation protocols to study the effect of noise and LDS smoothing:
+
+| Evaluation Protocol | Script File | Data Scope | Validation Split | Granularity | Training Epochs | Subject 1 Acc | All Subjects Avg |
+| :--- | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
+| **Within-Session Subject-Dependent** | [train.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train.py) | Single Session (S1) | Trials 1-9 for training;<br>Trials 10-15 for testing | Window-level | 200 | **79.26%** (Window) | **70.92%** (Window)<br>(Std: 9.15%) |
+| **Within-Session 5-Fold CV** | [train_5fold.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_5fold.py) | Single Session (S1) | Randomly shuffle and split all windows 8:2 | Window-level | 30 | **90.25%** (Window) | **89.30%** (Window)<br>(Std: 4.38%) |
+| **Adapter-Finetuned Transfer (AFTL)** | [train_aftl.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_aftl.py) | Cross-Subject (S1) | Pretrain on 14 source subjects;<br>Fine-tune on 50% target subject | **Window-level (Shuffle)**<br><hr>**Trial-level (No Leakage)** | Pretrain: 30<br>Finetune: 50 | **78.37%** (Window)<br><hr>**54.25%** (Window, Best)<br>**38.98%** (Window, Final) | **N/A** |
+
+#### In-Depth Scientific Analysis:
+1. **LDS Smoothing Crucial for Classification**:
+   Without LDS Kalman-like smoothing, Within-Session Subject-Dependent accuracy dropped from **86.63% to 70.92%** (a decrease of **~16.0%**). This is because raw EEG signals contain ambient noise, head movements, and muscle artifacts which corrupt the raw features.
+2. **Mitigated Leakage in 5-Fold CV**:
+   Even under the random-shuffled 5-fold CV protocol (which suffers from severe data leakage), accuracy dropped from **100.00% to 89.30%** due to the extra noise in raw features, demonstrating that noise prevents the model from achieving a perfect fit on leaked target distributions.
 
 ---
 

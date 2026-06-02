@@ -192,7 +192,7 @@ def main():
     parser.add_argument("--batch_size", type=int, default=128, help="Batch size")
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
     parser.add_argument("--weight_decay", type=float, default=1e-4, help="Weight decay regularization")
-    parser.add_argument("--feature_type", type=str, default="LDS", choices=["LDS", "movingAve"], help="Feature smoothing type")
+    parser.add_argument("--feature_type", type=str, default="LDS", choices=["LDS", "movingAve", "raw"], help="Feature smoothing type")
     parser.add_argument("--optimizer", type=str, default="adam", choices=["adam", "sgd"], help="Optimizer type")
     parser.add_argument("--run_all", action="store_true", help="Run 5-Fold CV across first sessions of all 15 subjects")
     parser.add_argument("--verbose", action="store_true", default=True, help="Print training logs per epoch step")

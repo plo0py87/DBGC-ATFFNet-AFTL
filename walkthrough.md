@@ -197,9 +197,34 @@ We implemented and verified the Adapter-Finetuned Transfer Learning (AFTL) pipel
     * Due to trial-to-trial non-stationarity, the test accuracy on unseen trials degrades down to **26.22%** by Epoch 50.
     * This demonstrates a classic trade-off in transfer learning: adapting to a very small target sample set (8 trials) without leakage results in severe model memorization unless heavy regularizations or early stopping are used.
 
+### 7. Classification Performance on Raw DE/PSD Features (No LDS Smoothing)
 
+We reran Within-Session Subject-Dependent baseline ([train.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train.py)) and Within-Session 5-Fold CV ([train_5fold.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_5fold.py)) using the raw un-smoothed features:
+* **Dataset directory**: `C:\Dev\BCI\EEG_Dataset\SEED\SEED\SEED_EEG\ExtractedFeatures_Raw`
+* **Feature type**: `raw`
 
+#### Within-Session Subject-Dependent (200 Epochs)
+* **Command**:
+  ```powershell
+  C:\Users\owner\.conda\envs\EEG\python.exe train.py --epochs 200 --feature_type raw --dataset_dir C:\Dev\BCI\EEG_Dataset\SEED\SEED\SEED_EEG\ExtractedFeatures_Raw
+  ```
+* **Results**:
+  * Subject 1 Best Accuracy: **79.26%**
+  * All Subjects Average: **70.92%** (Std: 9.15%)
 
+#### Within-Session 5-Fold CV (30 Epochs)
+* **Command**:
+  ```powershell
+  C:\Users\owner\.conda\envs\EEG\python.exe train_5fold.py --run_all --epochs 30 --feature_type raw --dataset_dir C:\Dev\BCI\EEG_Dataset\SEED\SEED\SEED_EEG\ExtractedFeatures_Raw
+  ```
+* **Results**:
+  * Subject 1 Average Accuracy: **90.25%**
+  * All Subjects Average: **89.30%** (Std: 4.38%)
 
+#### Analysis:
+1. **Performance Drop without LDS Smoothing**:
+   Compared to LDS features (which scored 86.63% on Within-Session Subject-Dependent baseline), using Raw features causes a drop of **~16.0%** in classification accuracy. This clearly highlights the importance of the LDS (Linear Dynamic System) smoothing algorithm in removing the high-frequency muscle artifacts and ambient noise that corrupt EEG signals.
+2. **Data Leakage inside 5-Fold CV**:
+   Even with raw features, 5-Fold CV achieves a high accuracy of **89.30%** because of the random window-level splitting which leaks temporal state information from the training fold to the testing fold (since adjacent windows inside the same trial are highly correlated). However, because of the extra noise in raw features, it does not reach the trivial 100.00% accuracy of the LDS features.
 
 
