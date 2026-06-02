@@ -302,7 +302,7 @@ def main():
     parser.add_argument("--lr", type=float, default=0.001, help="Pre-training learning rate")
     parser.add_argument("--lr_ft", type=float, default=0.001, help="Fine-tuning learning rate")
     parser.add_argument("--weight_decay", type=float, default=1e-4, help="Weight decay regularization")
-    parser.add_argument("--feature_type", type=str, default="LDS", choices=["LDS", "movingAve"], help="Feature smoothing type")
+    parser.add_argument("--feature_type", type=str, default="LDS", choices=["LDS", "movingAve", "raw"], help="Feature smoothing type")
     parser.add_argument("--run_all", action="store_true", help="Run AFTL across all 15 subjects")
     parser.add_argument("--split_type", type=str, default="window", choices=["window", "trial"], help="Data splitting strategy for target subject fine-tuning")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
