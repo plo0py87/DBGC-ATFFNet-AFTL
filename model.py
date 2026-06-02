@@ -85,7 +85,7 @@ class HGCN(nn.Module):
 
     def forward(self, x,A_ds):
         x = x.permute(0,2,1).unsqueeze(2)
-        L = torch.einsum('ik,kp->ip', (A_ds, torch.diag(torch.reciprocal(sum(A_ds)))))
+        L = torch.einsum('ik,kp->ip', (A_ds, torch.diag(torch.reciprocal(sum(A_ds) + 1e-6))))
         G = self.resGCN(x, x, L).contiguous()
         return G.squeeze(2).transpose(2,1)
 
