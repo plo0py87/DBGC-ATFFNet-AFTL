@@ -44,34 +44,36 @@ The Sjtu Emotion EEG Dataset (SEED) contains EEG records of 15 subjects watching
 
 Below is the comparison of classification performance using the `DAGCN` model on the SEED dataset across the four implemented protocols with standard LDS-smoothed features:
 
-| Evaluation Protocol | Script File | Data Scope | Validation Split | Granularity | Training Epochs | Subject 1 Acc | All Subjects Avg |
-| :--- | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
-| **Within-Session Subject-Dependent** | [train.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train.py) | Single Session (S1) | Trials 1-9 for training;<br>Trials 10-15 for testing | Window-level | 200 | **96.46%** (Window) | **86.63%** (Window)<br>(Std: 8.38%) |
-| **Cross-Session LOSO with Voting** | [train_loso.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_loso.py) | Cross-Session (S1-S3) | 3-Fold Leave-One-Session-Out | Window-level /<br>Trial-level (Voting) | 30 | **71.11%** (Voting)<br>**69.97%** (Window) | **76.74%** (Voting)<br>**72.45%** (Window) |
-| **Within-Session 5-Fold CV** | [train_5fold.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_5fold.py) | Single Session (S1) | Randomly shuffle and split all windows 8:2 | Window-level | 30 | **100.00%** (Window) | **100.00%** (Window)<br>(Std: 0.00%) |
-| **Adapter-Finetuned Transfer (AFTL)** | [train_aftl.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_aftl.py) | Cross-Subject (S1) | Pretrain on 14 source subjects;<br>Fine-tune on 50% target subject | **Window-level (Shuffle)**<br><hr>**Trial-level (No Leakage)** | Pretrain: 30<br>Finetune: 50 | **94.40%** (Window, bs=256)<br>**100.00%** (Window, bs=128)<br><hr>**61.28%** (Window, Best)<br>**26.22%** (Window, Final) | **N/A**<br>*(Pending run)* |
+| Evaluation Protocol | Script File | Validation Split | Granularity | Training Epochs | Accuracy (All Subjects Avg) |
+| :--- | :--- | :--- | :---: | :---: | :---: |
+| **Within-Session Subject-Dependent** | [train.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train.py) | Trials 1-9 for training;<br>Trials 10-15 for testing | Window-level | 200 | **86.63%** (Window) (Std: 8.38%) |
+| **Cross-Session LOSO with Voting** | [train_loso.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_loso.py) | 3-Fold Leave-One-Session-Out | Window-level /<br>Trial-level (Voting) | 30 | **76.74%** (Voting)<br>**72.45%** (Window) |
+| **Within-Session 5-Fold CV** | [train_5fold.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_5fold.py) | Randomly shuffle and split all windows 8:2 | Window-level | 30 | **100.00%** (Window) (Std: 0.00%) |
+| **Adapter-Finetuned Transfer (AFTL)** | [train_aftl.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_aftl.py) | Pretrain on 14 source subjects;<br>Fine-tune on 50% target subject | **Window-level (Shuffle)**<br><hr>**Trial-level (No Leakage)** | Pretrain: 30<br>Finetune: 50 | **94.40%** (Window)<br><hr>**61.28%** (Best) / **26.22%** (Final)<br>*(Subject 1)* |
 
 ### In-Depth Scientific Analysis:
 
 1. **Within-Session Subject-Dependent (86.63%)**:
-   Follows the standard protocol reported in the paper's Table 2. It evaluates the model's ability to generalize to unseen trials within the same session. A minor decrease in our average score compared to the paper (97.31%) is due to specific subjects (e.g. Subject 10) having a lower response, which is standard in subject-dependent EEG datasets.
-2. **Cross-Session LOSO with Voting (70.96%)**:
-   Evaluates the model across different sessions recorded on different days. Due to the high non-stationarity of EEG signals, this setting is extremely challenging. The majority voting mechanism over all windows of a movie trial successfully filters out transient window-level misclassifications, improving performance by **+3.21%** compared to window-level evaluation.
+   Follows the standard protocol reported in the paper's Table 2. It evaluates the model's ability to generalize to unseen trials within the same session. A minor decrease in our average score compared to the paper (97.31%) is due to subject-to-subject variance (e.g. Subject 10 having a lower response), which is typical in subject-dependent EEG datasets.
+2. **Cross-Session LOSO with Voting (76.74%)**:
+   Evaluates the model across sessions recorded on different days. Due to the high non-stationarity of EEG signals, this setting is extremely challenging. The majority voting mechanism over all windows of a movie trial successfully filters out transient window-level misclassifications, improving performance by **+4.29%** compared to window-level evaluation.
 3. **Within-Session 5-Fold CV (100.00%) - Data Leakage Caveat**:
    Shuffling 1-second windows from the same session and splitting them into training/testing folds creates severe **temporal data leakage**. Because adjacent 1-second windows in the same trial are highly correlated (sharing identical emotional states during a continuous video clip), the model memorizes these relationships, achieving a trivial 100% accuracy.
 4. **Adapter-Finetuned Transfer (AFTL)**:
-   * **Window-level Split (`--split_type window`)**: Achieving 94.40% to 100.00% accuracy reproduces the results in the paper. This confirms the paper's target splitting protocol utilizes random window-level splits, leading to temporal data leakage from the target subject.
+   * **Window-level Split (`--split_type window`)**: Achieving 94.40% accuracy reproduces the results in the paper. This confirms the paper's target splitting protocol utilizes random window-level splits, leading to temporal data leakage from the target subject.
    * **Trial-level Split (`--split_type trial`)**: When splitting target subject data by trials (8 trials for adaptation, 7 trials for testing), there is **zero leakage**. The model adapts initially (achieving **61.28%** test accuracy at Epoch 1), but because the adaptation set is small (only 8 trials), the 1,456 adapter parameters quickly overfit, memorizing the training trials (hitting 100% train accuracy) while test accuracy on unseen trials degrades to **26.22%**.
+
 
 ### 3.2 Classification Performance on Raw DE Features (No LDS Smoothing)
 
 We extracted raw, un-smoothed Differential Entropy (DE) and Power Spectral Density (PSD) features directly from the preprocessed EEG time-series signals on the D drive, and reran the evaluation protocols to study the effect of noise and LDS smoothing:
 
-| Evaluation Protocol | Script File | Data Scope | Validation Split | Granularity | Training Epochs | Subject 1 Acc | All Subjects Avg |
-| :--- | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
-| **Within-Session Subject-Dependent** | [train.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train.py) | Single Session (S1) | Trials 1-9 for training;<br>Trials 10-15 for testing | Window-level | 200 | **79.26%** (Window) | **70.92%** (Window)<br>(Std: 9.15%) |
-| **Within-Session 5-Fold CV** | [train_5fold.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_5fold.py) | Single Session (S1) | Randomly shuffle and split all windows 8:2 | Window-level | 30 | **90.25%** (Window) | **89.30%** (Window)<br>(Std: 4.38%) |
-| **Adapter-Finetuned Transfer (AFTL)** | [train_aftl.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_aftl.py) | Cross-Subject (S1) | Pretrain on 14 source subjects;<br>Fine-tune on 50% target subject | **Window-level (Shuffle)**<br><hr>**Trial-level (No Leakage)** | Pretrain: 30<br>Finetune: 50 | **78.37%** (Window)<br><hr>**54.25%** (Window, Best)<br>**38.98%** (Window, Final) | **N/A** |
+| Evaluation Protocol | Script File | Validation Split | Granularity | Training Epochs | Accuracy (All Subjects Avg) |
+| :--- | :--- | :--- | :---: | :---: | :---: |
+| **Within-Session Subject-Dependent** | [train.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train.py) | Trials 1-9 for training;<br>Trials 10-15 for testing | Window-level | 200 | **70.92%** (Window) (Std: 9.15%) |
+| **Within-Session 5-Fold CV** | [train_5fold.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_5fold.py) | Randomly shuffle and split all windows 8:2 | Window-level | 30 | **89.30%** (Window) (Std: 4.38%) |
+| **Adapter-Finetuned Transfer (AFTL)** | [train_aftl.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_aftl.py) | Pretrain on 14 source subjects;<br>Fine-tune on 50% target subject | **Window-level (Shuffle)**<br><hr>**Trial-level (No Leakage)** | Pretrain: 30<br>Finetune: 50 | **78.37%** (Window)<br><hr>**54.25%** (Best) / **38.98%** (Final)<br>*(Subject 1)* |
+
 
 #### In-Depth Scientific Analysis:
 1. **LDS Smoothing Crucial for Classification**:
