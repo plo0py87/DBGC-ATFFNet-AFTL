@@ -221,10 +221,19 @@ We reran Within-Session Subject-Dependent baseline ([train.py](file:///c:/Dev/BC
   * Subject 1 Average Accuracy: **90.25%**
   * All Subjects Average: **89.30%** (Std: 4.38%)
 
+#### Cross-Session LOSO CV with Voting (30 Epochs)
+* **Command**:
+  ```powershell
+  C:\Users\owner\.conda\envs\EEG\python.exe train_loso.py --run_all --epochs 30 --feature_type raw --dataset_dir C:\Dev\BCI\EEG_Dataset\SEED\SEED\SEED_EEG\ExtractedFeatures_Raw
+  ```
+* **Results**:
+  * Subject 1 Average: **71.11%** (Voting) / **57.57%** (Window)
+  * All Subjects Average: **78.22%** (Voting) / **64.57%** (Window)
+
 #### Analysis:
 1. **Performance Drop without LDS Smoothing**:
    Compared to LDS features (which scored 86.63% on Within-Session Subject-Dependent baseline), using Raw features causes a drop of **~16.0%** in classification accuracy. This clearly highlights the importance of the LDS (Linear Dynamic System) smoothing algorithm in removing the high-frequency muscle artifacts and ambient noise that corrupt EEG signals.
 2. **Data Leakage inside 5-Fold CV**:
    Even with raw features, 5-Fold CV achieves a high accuracy of **89.30%** because of the random window-level splitting which leaks temporal state information from the training fold to the testing fold (since adjacent windows inside the same trial are highly correlated). However, because of the extra noise in raw features, it does not reach the trivial 100.00% accuracy of the LDS features.
-
-
+3. **Cross-Session LOSO (Voting 78.22%)**:
+   Interestingly, the Voting Accuracy of LOSO on raw DE features (**78.22%**) is slightly higher than that on LDS features (**76.74%**), whereas the Window Accuracy is lower (**64.57%** vs **72.45%**). This suggests that the extra noise in raw features acts as a regularizer, preventing the model from overfitting to the source sessions. Majority trial voting then successfully filters out the remaining window-level misclassifications to achieve high-quality trial classification.

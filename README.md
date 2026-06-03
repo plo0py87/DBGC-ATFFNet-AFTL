@@ -71,6 +71,7 @@ We extracted raw, un-smoothed Differential Entropy (DE) and Power Spectral Densi
 | Evaluation Protocol | Script File | Validation Split | Granularity | Training Epochs | Accuracy (All Subjects Avg) |
 | :--- | :--- | :--- | :---: | :---: | :---: |
 | **Within-Session Subject-Dependent** | [train.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train.py) | Trials 1-9 for training;<br>Trials 10-15 for testing | Window-level | 200 | **70.92%** (Window) (Std: 9.15%) |
+| **Cross-Session LOSO with Voting** | [train_loso.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_loso.py) | 3-Fold Leave-One-Session-Out | Window-level /<br>Trial-level (Voting) | 30 | **78.22%** (Voting)<br>**64.57%** (Window) |
 | **Within-Session 5-Fold CV** | [train_5fold.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_5fold.py) | Randomly shuffle and split all windows 8:2 | Window-level | 30 | **89.30%** (Window) (Std: 4.38%) |
 | **Adapter-Finetuned Transfer (AFTL)** | [train_aftl.py](file:///c:/Dev/BCI/DBGC-ATFFNet-AFTL/train_aftl.py) | Pretrain on 14 source subjects;<br>Fine-tune on 50% target subject | **Window-level (Shuffle)**<br><hr>**Trial-level (No Leakage)** | Pretrain: 30<br>Finetune: 50 | **78.37%** (Window)<br><hr>**54.25%** (Best) / **38.98%** (Final)<br>*(Subject 1)* |
 
@@ -80,6 +81,9 @@ We extracted raw, un-smoothed Differential Entropy (DE) and Power Spectral Densi
    Without LDS Kalman-like smoothing, Within-Session Subject-Dependent accuracy dropped from **86.63% to 70.92%** (a decrease of **~16.0%**). This is because raw EEG signals contain ambient noise, head movements, and muscle artifacts which corrupt the raw features.
 2. **Mitigated Leakage in 5-Fold CV**:
    Even under the random-shuffled 5-fold CV protocol (which suffers from severe data leakage), accuracy dropped from **100.00% to 89.30%** due to the extra noise in raw features, demonstrating that noise prevents the model from achieving a perfect fit on leaked target distributions.
+3. **Cross-Session LOSO (Voting 78.22%)**:
+   Interestingly, the Voting Accuracy of LOSO on raw DE features (**78.22%**) is slightly higher than that on LDS features (**76.74%**), whereas the Window Accuracy is lower (**64.57%** vs **72.45%**). This suggests that the extra noise in raw features acts as a regularizer, preventing the model from overfitting to the source sessions. Majority trial voting then successfully filters out the remaining window-level misclassifications to achieve high-quality trial classification.
+
 
 ---
 
