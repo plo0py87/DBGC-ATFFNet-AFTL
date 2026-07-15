@@ -217,7 +217,7 @@ class Adapter(nn.Module):
 class DAGCN(nn.Module):
     def __init__(self,dataset):
         super(DAGCN,self).__init__()
-        options = {'seed':[62,3,5],'seed iv':[62,4,5],'deap':[32,4,4]}
+        options = {'seed':[62,3,5],'seed iv':[62,4,5],'deap':[32,4,4],'seed_quick20':[19,3,5]}
         self.chan_num = options[dataset][0]
         self.class_num = options[dataset][1]
         self.band_num = options[dataset][2]
